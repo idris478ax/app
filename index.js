@@ -1,16 +1,17 @@
-const bedrockflayer = require('bedrockflayer');
+// Re-created for Minecraft Java Edition using Standard Mineflayer
+const mineflayer = require('mineflayer');
 const express = require('express');
 
 // ==========================================
-// 1. CONFIGURATION
+// 1. CONFIGURATION (Edit these values)
 // ==========================================
 const CONFIG = {
-  host: 'bedrockflyer.aternos.me', // <<< EDIT THIS to your server IP
-  port: 45783,                     // <<< EDIT THIS to your server port
-  username: 'AternosBot',          // <<< EDIT THIS to your desired bot username
-  version: '1.26.36.1',            // <<< EDIT THIS to your exact Minecraft version
-  offline: true,                   // Bypasses Xbox Live for cracked servers
-
+  host: 'bedrockflyer.aternos.me', // Change to your Java Server IP/Address
+  port: 25565,                     // Default Java Port is 25565
+  username: 'AternosBot',          // Bot's username
+  version: '1.20.4',               // Specify Java version (or remove line for auto)
+  offline: true,                   // Set 'true' for Cracked servers (bypasses Auth)
+  
   // Kept just in case the server asks for /login. 
   // If the server doesn't use passwords, this will just be ignored.
   autoLoginPassword: 'MySecretPassword123' 
@@ -33,10 +34,11 @@ app.get('/', (req, res) => {
         </style>
       </head>
       <body>
-        <h1>Bedrock Bot Dashboard</h1>
+        <h1>Java Bot Dashboard</h1>
         <p>Status: <span class="status">Running</span></p>
         <p>Connected to: ${CONFIG.host}:${CONFIG.port}</p>
         <p>Username: ${CONFIG.username}</p>
+        <p>Edition: Java Edition</p>
         <p><small>Anti-AFK is active.</small></p>
       </body>
     </html>
@@ -54,18 +56,20 @@ let bot;
 let afkInterval;
 
 function createBot() {
-  console.log(`[Bot] Connecting to ${CONFIG.host}:${CONFIG.port}...`);
+  console.log(`[Bot] Connecting to ${CONFIG.host}:${CONFIG.port} (Java Edition)...`);
   
-  bot = bedrockflayer.createBot({
+  // Translation for Mineflayer: auth parameter sets offline/cracked mode.
+  bot = mineflayer.createBot({
     host: CONFIG.host,
     port: CONFIG.port,
     username: CONFIG.username,
     version: CONFIG.version,
-    offline: CONFIG.offline
+    auth: CONFIG.offline ? 'offline' : 'microsoft' 
   });
 
+  // Standard Mineflayer events
   bot.on('spawn', () => {
-    console.log(`[Bot] ${bot.username} spawned!`);
+    console.log(`[Bot] ${bot.username} spawned in the world!`);
     startAntiAFK();
   });
 
@@ -75,7 +79,7 @@ function createBot() {
     const lowerMsg = message.toLowerCase();
     console.log(`[CHAT] ${username}: ${message}`);
 
-    // --- AUTO LOGIN LOGIC ---
+    // --- AUTO LOGIN LOGIC (No /register) ---
     // Only triggers if the server specifically asks to login
     if (lowerMsg.includes('/login') || lowerMsg.includes('please login')) {
         console.log('[Bot] Server asked to login. Sending password...');
@@ -87,11 +91,12 @@ function createBot() {
     console.error('[Bot] Error:', err);
   });
 
+  // Handle disconnection and auto-reconnect
   bot.on('end', (reason) => {
     console.log('[Bot] Disconnected:', reason);
     if (afkInterval) clearInterval(afkInterval);
     
-    // Auto-reconnect
+    // Auto-reconnect after 10 seconds
     setTimeout(() => {
       console.log('[Bot] Reconnecting...');
       createBot();
@@ -102,19 +107,22 @@ function createBot() {
 // ==========================================
 // 4. ANTI-AFK FUNCTION
 // ==========================================
+// Preserved feature: swings arm and jumps every 3 minutes.
 function startAntiAFK() {
   if (afkInterval) clearInterval(afkInterval);
-  console.log('[Bot] Anti-AFK started.');
+  console.log('[Bot] Anti-AFK system started.');
   
   afkInterval = setInterval(() => {
     try {
+      // Standard Mineflayer actions are supported
       bot.swingArm();
       bot.setControlState('jump', true);
       setTimeout(() => bot.setControlState('jump', false), 500);
     } catch (err) {
-      // Ignore errors if bot is loading chunks
+      // Ignore errors if bot is loading chunks or unavailable
     }
-  }, 180000); 
+  }, 180000); // 3 minutes
 }
 
+// Start the sequence
 createBot();
