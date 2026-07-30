@@ -7,8 +7,8 @@ const express = require('express');
 // ==========================================
 const CONFIG = {
   host: 'bedrockflyer.aternos.me', // Change to your Java Server IP/Address
-  port: 25565,                     // Default Java Port is 25565
-  username: 'AternosBot',          // Bot's username
+  port: 45783,                     // Default Java Port is 25565
+  username: 'Abdou-online',          // Bot's username
   version: '1.20.4',               // Specify Java version (or remove line for auto)
   offline: true,                   // Set 'true' for Cracked servers (bypasses Auth)
   
