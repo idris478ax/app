@@ -2,34 +2,49 @@ const bedrockflayer = require('bedrockflayer');
 const express = require('express');
 
 // ==========================================
-// 1. CONFIGURATION (Edit these values)
+// 1. CONFIGURATION
 // ==========================================
 const CONFIG = {
-  host: 'bedrockflyer.aternos.me', // Aternos server IP
-  port: 45783,                     // Aternos server Port
-  username: 'AternosBot',          // Bot's in-game name
-  version: '1.26.36.1',            // Note: Make sure this exact version is supported by the server
-  offline: true                    // Bypasses Xbox Live for cracked servers
+  host: 'bedrockflyer.aternos.me', // <<< EDIT THIS to your server IP
+  port: 45783,                     // <<< EDIT THIS to your server port
+  username: 'AternosBot',          // <<< EDIT THIS to your desired bot username
+  version: '1.26.36.1',            // <<< EDIT THIS to your exact Minecraft version
+  offline: true,                   // Bypasses Xbox Live for cracked servers
+
+  // Kept just in case the server asks for /login. 
+  // If the server doesn't use passwords, this will just be ignored.
+  autoLoginPassword: 'MySecretPassword123' 
 };
 
 // ==========================================
 // 2. WEB DASHBOARD SERVER (For Render)
 // ==========================================
 const app = express();
-const PORT = process.env.PORT || 3000; // Render sets process.env.PORT automatically
+const PORT = process.env.PORT || 3000;
 
-// Basic web route - you can expand this later with HTML files for your dashboard
 app.get('/', (req, res) => {
   res.send(`
-    <h1>Bot Dashboard</h1>
-    <p>Status: Running</p>
-    <p>Connected to: ${CONFIG.host}:${CONFIG.port}</p>
-    <p>Username: ${CONFIG.username}</p>
+    <html>
+      <head>
+        <title>Bot Dashboard</title>
+        <style>
+          body { font-family: sans-serif; padding: 20px; }
+          .status { font-weight: bold; color: green; }
+        </style>
+      </head>
+      <body>
+        <h1>Bedrock Bot Dashboard</h1>
+        <p>Status: <span class="status">Running</span></p>
+        <p>Connected to: ${CONFIG.host}:${CONFIG.port}</p>
+        <p>Username: ${CONFIG.username}</p>
+        <p><small>Anti-AFK is active.</small></p>
+      </body>
+    </html>
   `);
 });
 
 app.listen(PORT, () => {
-  console.log(`[Web] Dashboard server listening on port ${PORT}`);
+  console.log(`[Web] Dashboard listening on port ${PORT}`);
 });
 
 // ==========================================
@@ -39,7 +54,7 @@ let bot;
 let afkInterval;
 
 function createBot() {
-  console.log(`[Bot] Attempting to connect to ${CONFIG.host}:${CONFIG.port}...`);
+  console.log(`[Bot] Connecting to ${CONFIG.host}:${CONFIG.port}...`);
   
   bot = bedrockflayer.createBot({
     host: CONFIG.host,
@@ -50,15 +65,22 @@ function createBot() {
   });
 
   bot.on('spawn', () => {
-    console.log(`[Bot] ${bot.username} spawned in the world!`);
-    
-    // Start Anti-AFK loop (runs every 3 minutes)
+    console.log(`[Bot] ${bot.username} spawned!`);
     startAntiAFK();
   });
 
   bot.on('chat', (username, message) => {
     if (username === bot.username) return;
+    
+    const lowerMsg = message.toLowerCase();
     console.log(`[CHAT] ${username}: ${message}`);
+
+    // --- AUTO LOGIN LOGIC ---
+    // Only triggers if the server specifically asks to login
+    if (lowerMsg.includes('/login') || lowerMsg.includes('please login')) {
+        console.log('[Bot] Server asked to login. Sending password...');
+        bot.chat(`/login ${CONFIG.autoLoginPassword}`);
+    }
   });
 
   bot.on('error', (err) => {
@@ -67,9 +89,9 @@ function createBot() {
 
   bot.on('end', (reason) => {
     console.log('[Bot] Disconnected:', reason);
-    clearInterval(afkInterval); // Stop Anti-AFK when disconnected
+    if (afkInterval) clearInterval(afkInterval);
     
-    // Auto-reconnect after 10 seconds if kicked/disconnected
+    // Auto-reconnect
     setTimeout(() => {
       console.log('[Bot] Reconnecting...');
       createBot();
@@ -81,29 +103,18 @@ function createBot() {
 // 4. ANTI-AFK FUNCTION
 // ==========================================
 function startAntiAFK() {
-  // Clear any existing intervals just in case
   if (afkInterval) clearInterval(afkInterval);
-
   console.log('[Bot] Anti-AFK started.');
   
-  // Every 3 minutes (180000 ms), the bot will swing its arm and jump
   afkInterval = setInterval(() => {
     try {
-      // Swing arm
       bot.swingArm();
-      
-      // Jump up and down
       bot.setControlState('jump', true);
-      setTimeout(() => {
-        bot.setControlState('jump', false);
-      }, 500); // Hold jump for half a second
-      
-      console.log('[Bot] Performed Anti-AFK action.');
+      setTimeout(() => bot.setControlState('jump', false), 500);
     } catch (err) {
-      console.log('[Bot] Failed to perform Anti-AFK action (might be loading).');
+      // Ignore errors if bot is loading chunks
     }
   }, 180000); 
 }
 
-// Start the bot
 createBot();
