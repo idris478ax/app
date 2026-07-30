@@ -1,13 +1,10 @@
 {
-  "name": "bedrock-render-bot",
+  "name": "aternos-bedrock-bot",
   "version": "1.0.0",
-  "description": "Minecraft Bedrock bot hosted on Render with a web dashboard base",
+  "description": "",
   "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
   "dependencies": {
-    "bedrockflayer": "^1.1.2",
+    "bedrockflayer": "github:ExtremeX/bedrockflayer#master",
     "express": "^4.18.2"
   }
 }
